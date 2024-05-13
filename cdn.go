@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
@@ -22,7 +23,7 @@ type Config struct {
 
 func main() {
 	if len(os.Args) < 9 {
-		fmt.Println("Usage: go run main.go -i <AccessKey> -k <AccessKeySecret> -r <FilePath> -t <TaskType> [-o <ObjectType>] [-a <Area>]")
+		fmt.Println("Usage: go run cdn.go -i <AccessKey> -k <AccessKeySecret> -r <FilePath> -t <TaskType> [-o <ObjectType>] [-a <Area>]")
 		return
 	}
 
@@ -144,7 +145,7 @@ func preheatUrls(client *cdn.Client, urls []string, area string) error {
 
 func printResponse(status int, response string) {
 	fmt.Printf("HTTP Status: %d\n", status)
-	var prettyJSON strings.Builder
+	var prettyJSON bytes.Buffer
 	if err := json.Indent(&prettyJSON, []byte(response), "", "    "); err != nil {
 		fmt.Println("Failed to format JSON:", err)
 		return
