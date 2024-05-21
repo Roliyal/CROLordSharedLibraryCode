@@ -7,7 +7,6 @@ class BuildUtils {
 
         // Check if build for linux/amd64 is needed
         if (envVars.PLATFORMS.contains('linux/amd64')) {
-        agent { kubernetes { inheritFrom 'kanikoamd' } }
             parallelCount++
             branches['Build for amd64'] = {
                 script.unstash 'source-code'
@@ -32,7 +31,6 @@ class BuildUtils {
             }
         // Check if build for linux/arm64 is needed
         if (envVars.PLATFORMS.contains('linux/arm64')) {
-        agent { kubernetes { inheritFrom 'kanikoamd' } }
             parallelCount++
             branches['Build for arm64'] = {
                 script.unstash 'source-code'
