@@ -1,7 +1,6 @@
 #!groovy
 
-@Library('CROLordSharedLlibraryCode
-') _
+@Library('CROLordSharedLlibraryCode')  _
 
 pipeline {
     // 定义使用的 Jenkins agent 类型
