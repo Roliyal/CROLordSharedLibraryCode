@@ -1,15 +1,12 @@
 #!groovy
 
-<<<<<<< HEAD
-@Library('jenkinslib') _
-=======
-@Library('CROLordSharedLlibraryCode') _
->>>>>>> origin/main
+@Library('CROLordSharedLlibraryCode
+') _
 
 pipeline {
     // 定义使用的 Jenkins agent 类型
     agent any
-
+    
     // 定义环境变量
     environment {
         GIT_BRANCH = 'main' // Git主分支的默认值
@@ -43,7 +40,7 @@ pipeline {
         string(name: 'SONARQUBE_DOMAINE', defaultValue: 'sonarqube.roliyal.com', description: 'SonarQube domain, default: sonarqube.roliyal.com')
     }
 
-
+    
         // 构建流程定义
         stages {
             // 设置版本信息
@@ -56,7 +53,7 @@ pipeline {
                     }
                 }
             }
-
+            
         // 检出代码
         stage('Checkout') {
             steps {
@@ -74,7 +71,7 @@ pipeline {
                 echo '代码检出完成'
             }
         }
-
+        
         // 检查目录和Dockerfile
         stage('Check Directory') {
             steps {
@@ -92,7 +89,7 @@ pipeline {
             steps {
                 // 从之前的阶段恢复存储的源代码
                 unstash 'source-code'
-
+        
                 // 指定在特定容器中执行
                 container('kanikoamd') {
                     // 设置SonarQube环境
@@ -110,7 +107,7 @@ pipeline {
                 }
             }
         }
-
+        
 
 
 
@@ -130,7 +127,7 @@ pipeline {
             }
         }
         // 判断架构进行构建
-
+         
         stage('Parallel Build') {
             when {
                 expression {
@@ -141,7 +138,7 @@ pipeline {
                  //为 amd64 构建镜像
                     stage('Build for amd64') {
                         when {   // 当 PLATFORMS 为 linux/amd64 时进行构建
-                            expression {
+                            expression { 
                                 def result = env.PLATFORMS == 'linux/amd64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
                                 echo "Evaluation for 'linux/amd64': ${result}"
                                 return result
@@ -173,7 +170,7 @@ pipeline {
                     stage('Build for arm64') {
                         //PLATFORMS 为 linux/arm64 时进行构建
                         when {
-                            expression {
+                            expression { 
                                 def result = env.PLATFORMS == 'linux/arm64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
                                 echo "Evaluation for 'linux/arm64': ${result}"
                                 return result
@@ -203,7 +200,7 @@ pipeline {
                     }
                 }
             }
-
+            
             // 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } }
@@ -225,17 +222,17 @@ pipeline {
             }
             // 部署到 Kubernetes 集群
             /*stage('Deploy to Kubernetes') {
-                agent { kubernetes { inheritFrom 'kanikoamd' } }
+                agent { kubernetes { inheritFrom 'kanikoamd' } } 
                 steps {
                     unstash 'source-code' // 恢复之前存储的代码
                     container('kanikoamd') {
                         script {
                             withCredentials([file(credentialsId: 'crolorduat', variable: 'KUBECONFIG')]) {
                                 // 执行 kubectl 命令
-                                sh "kaniko version"
+                                sh "kaniko version" 
                                 sh "kubectl get node"
                                 env.FULL_IMAGE_URL = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${env.VERSION_TAG}"
-
+                                
                                 sh """
                                 cd ${env.WORKSPACE}/${params.BUILD_DIRECTORY}
                                 cp *.yaml updated-deployment.yaml
@@ -247,10 +244,6 @@ pipeline {
                     }
                 }
         }*/
-
+    
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/main
