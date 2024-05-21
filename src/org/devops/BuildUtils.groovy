@@ -15,7 +15,7 @@ class BuildUtils {
                             kaniko \
                               --context ${envVars.WORKSPACE}/${envVars.BUILD_DIRECTORY} \
                               --dockerfile ${envVars.BUILD_DIRECTORY}/Dockerfile \
-                              --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/crolord:${envVars.VERSION_TAG}-amd64 \
+                              --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/${envVars.IMAGE_NAMESPACE}:${envVars.VERSION_TAG}-amd64 \
                               --cache=true \
                               --cache-repo=${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/cache \
                               --skip-tls-verify \
@@ -39,7 +39,7 @@ class BuildUtils {
                             /kaniko/executor \
                               --context ${envVars.WORKSPACE}/${envVars.BUILD_DIRECTORY} \
                               --dockerfile ${envVars.BUILD_DIRECTORY}/Dockerfile \
-                              --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/crolord:${envVars.VERSION_TAG}-arm64 \
+                              --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/${envVars.IMAGE_NAMESPACE}:${envVars.VERSION_TAG}-arm64 \
                               --cache=true \
                               --cache-repo=${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/cache \
                               --skip-tls-verify \
