@@ -28,7 +28,7 @@ class BuildUtils {
                         """
                     }
                 }
-            },
+            }
         // Check if build for linux/arm64 is needed
         if (envVars.PLATFORMS.contains('linux/arm64')) {
             parallelCount++
