@@ -110,95 +110,27 @@ pipeline {
 
 
 
-
-
-
-
-
-
-
-        //当前选择构建架构
-        stage('Print PLATFORMS') {
+        stage('Parallel Build') {
+            agent { kubernetes { inheritFrom 'kanikoamd' } }
             steps {
                 script {
-                    echo "Selected PLATFORMS: ${env.PLATFORMS}"
+                    // 构建环境变量字典，用于传递到构建函数
+                    def envVars = [
+                        PLATFORMS: env.PLATFORMS,
+                        WORKSPACE: env.WORKSPACE,
+                        BUILD_DIRECTORY: params.BUILD_DIRECTORY,
+                        IMAGE_REGISTRY: env.IMAGE_REGISTRY,
+                        IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
+                        JOB_NAME: env.JOB_NAME,
+                        VERSION_TAG: env.VERSION_TAG
+                    ]
+                
+                    // 调用BuildUtils类中的buildImage方法
+                    BuildUtils.buildImage(this, envVars)
                 }
             }
         }
-        // 判断架构进行构建
-         
-        stage('Parallel Build') {
-            when {
-                expression {
-                env.PLATFORMS == 'linux/amd64' || env.PLATFORMS == 'linux/arm64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
-                }
-            }
-            parallel {
-                 //为 amd64 构建镜像
-                    stage('Build for amd64') {
-                        when {   // 当 PLATFORMS 为 linux/amd64 时进行构建
-                            expression { 
-                                def result = env.PLATFORMS == 'linux/amd64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
-                                echo "Evaluation for 'linux/amd64': ${result}"
-                                return result
-                            }
-                        }
-                        agent { kubernetes { inheritFrom 'kanikoamd' } }
-                        steps {
-                            unstash 'source-code' // 恢复之前存储的代码
-                            container('kanikoamd') {
-                                sh """
-                                    kaniko \
-                                      --context ${env.WORKSPACE}/${params.BUILD_DIRECTORY} \
-                                      --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
-                                      --destination ${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${VERSION_TAG}-amd64 \
-                                      --cache=true \
-                                      --cache-repo=${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/cache \
-                                      --skip-tls-verify \
-                                      --skip-unused-stages=true \
-                                      --custom-platform=linux/amd64 \
-                                      --build-arg BUILDKIT_INLINE_CACHE=1 \
-                                      --snapshot-mode=redo \
-                                      --log-format=text \
-                                      --verbosity=info
-                                """
-                            }
-                        }
-                    }
-                   // 为 arm64 构建镜像
-                    stage('Build for arm64') {
-                        //PLATFORMS 为 linux/arm64 时进行构建
-                        when {
-                            expression { 
-                                def result = env.PLATFORMS == 'linux/arm64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
-                                echo "Evaluation for 'linux/arm64': ${result}"
-                                return result
-                            }
-                        }
-                        agent { kubernetes { inheritFrom 'kanikoarm' } }
-                        steps {
-                            unstash 'source-code'
-                            container('kanikoarm') {
-                                sh """
-                                /kaniko/executor \
-                                  --context ${env.WORKSPACE}/${params.BUILD_DIRECTORY} \
-                                  --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
-                                  --destination ${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${VERSION_TAG}-arm64 \
-                                  --cache=true \
-                                  --cache-repo=${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/cache \
-                                  --skip-tls-verify \
-                                  --skip-unused-stages=true \
-                                  --custom-platform=linux/arm64 \
-                                  --build-arg BUILDKIT_INLINE_CACHE=1 \
-                                  --snapshotMode=redo \
-                                  --log-format=text \
-                                  --verbosity=info
-                                """
-                            }
-                        }
-                    }
-                }
-            }
+
             
             // 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
