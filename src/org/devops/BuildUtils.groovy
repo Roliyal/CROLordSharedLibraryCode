@@ -1,4 +1,4 @@
-package org.jenkins
+package org.devops
 
 class BuildUtils {
     static void buildImage(script, envVars) {
