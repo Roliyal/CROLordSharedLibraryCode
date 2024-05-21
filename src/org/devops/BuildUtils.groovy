@@ -2,11 +2,15 @@ package org.devops
 
 class BuildUtils {
     static void buildImage(script, envVars) {
-        script.parallel(
-            'Build for amd64': {
-                script.when(script.env.PLATFORMS.contains('linux/amd64')) {
-                    script.unstash 'source-code'
-                    script.container('kanikoamd') {
+        int parallelCount = 0
+        Map<String, Closure> branches = [:]
+
+        // Check if build for linux/amd64 is needed
+        if (envVars.PLATFORMS.contains('linux/amd64')) {
+            parallelCount++
+            branches['Build for amd64'] = {
+                script.unstash 'source-code'
+                script.container('kanikoamd') {
                         script.sh """
                             kaniko \
                               --context ${envVars.WORKSPACE}/${envVars.BUILD_DIRECTORY} \
@@ -25,10 +29,12 @@ class BuildUtils {
                     }
                 }
             },
-            'Build for arm64': {
-                script.when(script.env.PLATFORMS.contains('linux/arm64')) {
-                    script.unstash 'source-code'
-                    script.container('kanikoarm') {
+        // Check if build for linux/arm64 is needed
+        if (envVars.PLATFORMS.contains('linux/arm64')) {
+            parallelCount++
+            branches['Build for arm64'] = {
+                script.unstash 'source-code'
+                script.container('kanikoarm') {
                         script.sh """
                             /kaniko/executor \
                               --context ${envVars.WORKSPACE}/${envVars.BUILD_DIRECTORY} \
@@ -47,6 +53,9 @@ class BuildUtils {
                     }
                 }
             }
-        )
+                // If we have at least one parallel block to run, then run them
+        if (parallelCount > 0) {
+            script.parallel branches
+        }
     }
 }
