@@ -124,6 +124,7 @@ pipeline {
                         IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
                         JOB_NAME: env.JOB_NAME,
                         VERSION_TAG: env.VERSION_TAG
+                        REPOSITORY_NAME：env.REPOSITORY_NAME
                     ]
                 
                     // 调用BuildUtils类中的buildImage方法
