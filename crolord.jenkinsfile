@@ -18,7 +18,7 @@ pipeline {
         VERSION_TAG = "${MAJOR}.${MINOR}.${PATCH}" // 组合版本标签
         IMAGE_REGISTRY = "${params.IMAGE_REGISTRY}" // 镜像仓库地址
         IMAGE_NAMESPACE = "${params.IMAGE_NAMESPACE}" // 镜像命名空间
-        REPOSITORY_NAME = 'crolord'     // 镜像仓库名
+        REPOSITORY_NAME = "${params.REPOSITORY_NAME}"     // 镜像仓库名
         IMAGE_ID = "${params.IMAGE_NAMESPACE}" // 镜像ID
         SONARQUBE_DOMAIN = "${params.SONARQUBE_DOMAINE}" // Sonarqube 域名配置
         PLATFORMS = "${params.PLATFORMS}" //PLATFORMS使用用户选择的平台参数
@@ -37,6 +37,7 @@ pipeline {
         string(name: 'BUILD_DIRECTORY', defaultValue: 'Chapter2KubernetesApplicationBuild/Unit2CodeLibrary/FEBEseparation/go-guess-number', description: 'Build directory path, default path: Chapter2KubernetesApplicationBuild/Unit2CodeLibrary/FEBEseparation/go-guess-number')
         string(name: 'IMAGE_REGISTRY', defaultValue: 'lxf-registry-vpc.cn-hongkong.cr.aliyuncs.com', description: 'Image registry address, default: crolord-registry-registry-vpc.cn-hongkong.cr.aliyuncs.com')
         string(name: 'IMAGE_NAMESPACE', defaultValue: 'febe', description: 'Image namespace, default: febe')
+        string(name: 'REPOSITORY_NAME', defaultValue: 'crolord', description: 'Repository name, default: crolord')
         string(name: 'SONARQUBE_DOMAINE', defaultValue: 'sonarqube.roliyal.com', description: 'SonarQube domain, default: sonarqube.roliyal.com')
     }
 
