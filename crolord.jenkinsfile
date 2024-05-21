@@ -126,7 +126,7 @@ pipeline {
                     ]
                 
                     // 调用BuildUtils类中的buildImage方法
-                    BuildUtils.buildImage(this, envVars)
+                    org.devops.BuildUtils.buildImage(this, envVars)
                 }
             }
         }
