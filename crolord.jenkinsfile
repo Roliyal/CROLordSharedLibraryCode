@@ -123,7 +123,7 @@ pipeline {
                         IMAGE_REGISTRY: env.IMAGE_REGISTRY,
                         IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
                         JOB_NAME: env.JOB_NAME,
-                        VERSION_TAG: env.VERSION_TAG
+                        VERSION_TAG: env.VERSION_TAG,
                         REPOSITORY_NAME：env.REPOSITORY_NAME
                     ]
                 
