@@ -31,18 +31,34 @@ class SonarQubeScanner {
         script.withCredentials([script.string(credentialsId: 'sonar', variable: 'SONAR_TOKEN')]) {
             def authHeader = "Basic " + (script.SONAR_TOKEN + ":").bytes.encodeBase64().toString().trim()
             def response = script.httpRequest(
+<<<<<<< HEAD
                     url: "http://${params.SONARQUBE_DOMAIN}/api/qualitygates/project_status?projectKey=${params.JOB_NAME}",
                     customHeaders: [[name: 'Authorization', value: authHeader]],
                     consoleLogResponseBody: true,
                     acceptType: 'APPLICATION_JSON',
                     contentType: 'APPLICATION_JSON'
+=======
+                url: "http://${params.SONARQUBE_DOMAIN}/api/qualitygates/project_status?projectKey=${params.JOB_NAME}",
+                customHeaders: [[name: 'Authorization', value: authHeader]],
+                consoleLogResponseBody: true,
+                acceptType: 'APPLICATION_JSON',
+                contentType: 'APPLICATION_JSON'
+>>>>>>> origin/main
             )
             def json = new JsonSlurper().parseText(response.content)
             if (json.projectStatus.status != 'OK') {
                 script.error "SonarQube quality gate failed: ${json.projectStatus.status}"
             } else {
                 script.echo "Quality gate passed successfully."
+<<<<<<< HEAD
             }
         }
     }
 }
+=======
+                }
+            }
+         }
+     }
+ 
+>>>>>>> origin/main

@@ -1,6 +1,10 @@
 #!groovy
 
+<<<<<<< HEAD
 @Library('jenkinslib') _
+=======
+@Library('CROLordSharedLlibraryCode') _
+>>>>>>> origin/main
 
 pipeline {
     // 定义使用的 Jenkins agent 类型
@@ -245,4 +249,8 @@ pipeline {
         }*/
 
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> origin/main
