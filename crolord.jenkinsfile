@@ -18,6 +18,7 @@ pipeline {
         VERSION_TAG = "${MAJOR}.${MINOR}.${PATCH}" // 组合版本标签
         IMAGE_REGISTRY = "${params.IMAGE_REGISTRY}" // 镜像仓库地址
         IMAGE_NAMESPACE = "${params.IMAGE_NAMESPACE}" // 镜像命名空间
+        REPOSITORY_NAME = 'crolord'     // 镜像仓库名
         IMAGE_ID = "${params.IMAGE_NAMESPACE}" // 镜像ID
         SONARQUBE_DOMAIN = "${params.SONARQUBE_DOMAINE}" // Sonarqube 域名配置
         PLATFORMS = "${params.PLATFORMS}" //PLATFORMS使用用户选择的平台参数
@@ -143,8 +144,8 @@ pipeline {
                             sh """
                                 manifest-tool --insecure push from-args \\
                                 --platforms '${env.PLATFORMS}' \\
-                                --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${env.VERSION_TAG}'
+                                --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
+                                --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
                             """
                             sh "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${env.VERSION_TAG}'"
                         }
