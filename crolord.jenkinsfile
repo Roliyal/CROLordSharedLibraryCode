@@ -149,7 +149,7 @@ pipeline {
                                 --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
                                 --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
                             """
-                            sh "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/env.REPOSITORY_NAME:${env.VERSION_TAG}'"
+                            sh "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
                         }
                     }
                 }
@@ -165,7 +165,7 @@ pipeline {
                                 // 执行 kubectl 命令
                                 sh "kaniko version" 
                                 sh "kubectl get node"
-                                env.FULL_IMAGE_URL = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/env.REPOSITORY_NAME:${env.VERSION_TAG}"
+                                env.FULL_IMAGE_URL = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}"
                                 
                                 sh """
                                 cd ${env.WORKSPACE}/${params.BUILD_DIRECTORY}
