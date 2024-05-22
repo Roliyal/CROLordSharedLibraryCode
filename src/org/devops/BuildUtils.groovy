@@ -2,7 +2,7 @@ package org.devops
 
 class BuildUtils {
     // 构建 amd64 镜像的方法
-    def buildAmd64 = {script, Map params, Map envVars ->
+    def buildAmd64 = {script, Map params, Map envVars -> 
         script.sh """
             kaniko \
               --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
