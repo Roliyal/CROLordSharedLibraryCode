@@ -1,6 +1,7 @@
 #!groovy
 
 @Library('CROLordSharedLibraryCode')  _
+import org.devops.BuildUtils
 
 pipeline {
     // 定义使用的 Jenkins agent 类型
@@ -100,8 +101,9 @@ pipeline {
                         script {
                             unstash 'source-code'
                             container('kanikoamd') {
+                                def utils = new BuildUtils()
                                 // 调用 BuildUtils 的 buildAmd64 方法
-                                org.devops.BuildUtils.buildAmd64(this, params, env)
+                                utils.buildAmd64(this, params, env)
                             }
                         }
                     }
@@ -117,9 +119,9 @@ pipeline {
                     steps {
                         script {
                             unstash 'source-code'
-                            container('kanikoarm') {
-                                // 调用 BuildUtils 的 buildArm64 方法
-                                org.devops.BuildUtils.buildArm64(this, params, env)
+                                def utils = new BuildUtils()
+                                // 调用 BuildUtils 的 buildAmd64 方法
+                                utils.buildArm64(this, params, env)
                             }
                         }
                     }
