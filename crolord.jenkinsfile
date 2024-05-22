@@ -89,7 +89,7 @@ stage('Parallel Build') {
             
             // 在script块中定义getImageForPlatform方法
             def getImageForPlatform = { String platform ->
-                return (platform == 'linux/amd64') ? 'kanikoamd64' : 'kanikoarm64'
+                return (platform == 'linux/amd64') ? 'kanikoamd' : 'kanikoarm'
             }
 
 
