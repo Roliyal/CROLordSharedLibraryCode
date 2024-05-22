@@ -124,7 +124,7 @@ stage('Parallel Build') {
 
 // 该函数基于平台名称返回相应的镜像
 def getImageForPlatform(String platform) {
-    return (platform == 'linux/amd64') ? 'docker-image-for-amd64' : 'docker-image-for-arm64'
+    return (platform == 'linux/amd64') ? 'kanikoamd64' : 'kanikoarm64'
 }
 
 
