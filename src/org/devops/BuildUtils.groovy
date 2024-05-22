@@ -2,7 +2,7 @@ package org.devops
 
 class BuildUtils {
     // 构建 amd64 镜像的方法
-    static def buildAmd64(script, Map params, Map envVars) {
+    def buildAmd64 = {script, Map params, Map envVars ->
         script.sh """
             kaniko \
               --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
@@ -21,7 +21,7 @@ class BuildUtils {
     }
 
     // 构建 arm64 镜像的方法
-    static def buildArm64(script, Map params, Map envVars) {
+    def buildArm64 = {script, Map params, Map envVars ->
         script.sh """
             /kaniko/executor \
               --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
