@@ -89,6 +89,8 @@ pipeline {
                     def buildTasks = [:] // 初始化用于并行构建的任务映射
 
                     for (platform in platforms) {
+                        // 根据平台定义 templateName
+                        def templateName = (platform.contains('amd64')) ? 'kanikoamd' : 'kanikoarm'
                         buildTasks["Build on ${platform}"] = {
                             node { // node() 用来分配执行器，可能需要指定特定标签来运行指定的 podTemplate
                                 // 使用预定义的 Pod 模板
