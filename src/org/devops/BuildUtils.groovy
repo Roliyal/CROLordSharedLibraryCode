@@ -1,3 +1,5 @@
+package org.devops
+
 class BuildUtils {
     // 构建 amd64 镜像的方法
     static def buildAmd64(script, Map params, Map envVars) {
