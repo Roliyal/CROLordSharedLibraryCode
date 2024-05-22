@@ -137,7 +137,7 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildArm64(currentScript, params, envVars)
-                            }
+                            
                             }
                         }
                     }
