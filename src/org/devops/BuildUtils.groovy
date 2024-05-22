@@ -1,4 +1,3 @@
-
 package org.devops
 
 class BuildUtils {
