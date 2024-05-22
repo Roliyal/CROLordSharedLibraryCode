@@ -82,25 +82,19 @@ pipeline {
             }
         }
 
-
-
-
- 
         stage('Parallel Build') {
             steps {
                 script {
-                    def platforms = env.PLATFORMS.tokenize(',')
-                    def buildTasks = [:]
-        
+                    def platforms = env.PLATFORMS.tokenize(',') // 从环境变量 PLATFORMS 获取目标平台
+                    def buildTasks = [:] // 初始化用于并行构建的任务映射
+
                     for (platform in platforms) {
-                        def templateName = (platform == 'linux/amd64') ? 'kanikoamd' : 'kanikoarm'
-        
                         buildTasks["Build on ${platform}"] = {
-                            node {
-                                // 继承预定义的Pod模板 'kanikoamd' 或 'kanikoarm'
+                            node { // node() 用来分配执行器，可能需要指定特定标签来运行指定的 podTemplate
+                                // 使用预定义的 Pod 模板
                                 podTemplate(label: "build-${platform}", inheritFrom: templateName) {
                                     node("build-${platform}") {
-                                        // 构建环境变量
+                                        // 构建环境变量的映射
                                         def envVars = [
                                             WORKSPACE: env.WORKSPACE,
                                             BUILD_DIRECTORY: params.BUILD_DIRECTORY,
@@ -110,18 +104,24 @@ pipeline {
                                             VERSION_TAG: env.VERSION_TAG,
                                             REPOSITORY_NAME: env.REPOSITORY_NAME
                                         ]
-                                        // 到共享库调用构建
+                                        // 调用共享库的 buildImage 方法执行构建
                                         org.devops.BuildUtils.buildImage(this, platform, envVars)
                                     }
                                 }
                             }
                         }
                     }
-        
+
+                    // 使用 parallel 来并行执行各个构建任务
                     parallel buildTasks
                 }
             }
         }
+
+
+
+ 
+      
             
 
 
