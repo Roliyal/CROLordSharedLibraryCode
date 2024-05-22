@@ -91,31 +91,38 @@ pipeline {
                 script {
                     def platforms = env.PLATFORMS.tokenize(',')
                     def buildTasks = [:]
-
-                    def envVars = [
-                        PLATFORMS: env.PLATFORMS,
-                        WORKSPACE: env.WORKSPACE,
-                        BUILD_DIRECTORY: params.BUILD_DIRECTORY,
-                        IMAGE_REGISTRY: env.IMAGE_REGISTRY,
-                        IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
-                        JOB_NAME: env.JOB_NAME,
-                        VERSION_TAG: env.VERSION_TAG,
-                        REPOSITORY_NAME: env.REPOSITORY_NAME
-                        ]
-                
-                    
-                    platforms.each { platform ->
+        
+                    for (platform in platforms) {
+                        def templateName = (platform == 'linux/amd64') ? 'kanikoamd' : 'kanikoarm'
+        
                         buildTasks["Build on ${platform}"] = {
-                            def specificEnvVars = envVars + [PLATFORM: platform]
-                            org.devops.BuildUtils.buildImage(this, platform, specificEnvVars)
+                            node {
+                                // 继承预定义的Pod模板 'kanikoamd' 或 'kanikoarm'
+                                podTemplate(label: "build-${platform}", inheritFrom: templateName) {
+                                    node("build-${platform}") {
+                                        // 构建环境变量
+                                        def envVars = [
+                                            WORKSPACE: env.WORKSPACE,
+                                            BUILD_DIRECTORY: params.BUILD_DIRECTORY,
+                                            IMAGE_REGISTRY: env.IMAGE_REGISTRY,
+                                            IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
+                                            JOB_NAME: env.JOB_NAME,
+                                            VERSION_TAG: env.VERSION_TAG,
+                                            REPOSITORY_NAME: env.REPOSITORY_NAME
+                                        ]
+                                        // 到共享库调用构建
+                                        org.devops.BuildUtils.buildImage(this, platform, envVars)
+                                    }
+                                }
+                            }
                         }
                     }
-
+        
                     parallel buildTasks
                 }
             }
         }
-    
+            
 
 
 
