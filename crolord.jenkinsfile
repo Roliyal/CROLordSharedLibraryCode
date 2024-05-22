@@ -105,12 +105,12 @@ pipeline {
                                 // 获取当前脚本 (this指当前的流水线脚本实例)
                                 def currentScript = this
                                 // 创建环境变量的映射
-                                def clonedEnv = [:]
+                                def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
                                     clonedEnv[key] = value
                                 }
                                 // 调用BuildUtils中的方法
-                                utils.buildAmd64(currentScript, params, clonedEnv)
+                                utils.buildAmd64(currentScript, params, envVars)
                             }
                         }
                     }
@@ -131,12 +131,13 @@ pipeline {
                                 // 获取当前脚本 (this指当前的流水线脚本实例)
                                 def currentScript = this
                                 // 创建环境变量的映射
-                                def clonedEnv = [:]
+                                def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
                                     clonedEnv[key] = value
                                 }
                                 // 调用BuildUtils中的方法
-                                utils.buildArm64(currentScript, params, clonedEnv)
+                                utils.buildArm64(currentScript, params, envVars)
+                            }
                             }
                         }
                     }
