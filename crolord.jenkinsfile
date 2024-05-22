@@ -107,7 +107,7 @@ pipeline {
                     platforms.each { platform ->
                         buildTasks["Build on ${platform}"] = {
                             def specificEnvVars = envVars + [PLATFORM: platform]
-                            org.dev.BuildUtils.buildImage(this, platform, specificEnvVars)
+                            org.devops.BuildUtils.buildImage(this, platform, specificEnvVars)
                         }
                     }
 
