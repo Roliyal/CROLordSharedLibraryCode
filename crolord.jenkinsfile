@@ -119,6 +119,7 @@ pipeline {
                     steps {
                         script {
                             unstash 'source-code'
+                            container('kanikoarm') {
                                 def utils = new BuildUtils()
                                 // 调用 BuildUtils 的 buildAmd64 方法
                                 utils.buildArm64(this, params, env)
