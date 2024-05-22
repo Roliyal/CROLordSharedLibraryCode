@@ -3,7 +3,7 @@ package org.devops
 class BuildUtils {
     // 构建 amd64 镜像的方法
     def buildAmd64 = {script, Map params, Map envVars -> 
-        script.sh (script: """
+        script.sh  """
             kaniko \
               --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
               --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
@@ -17,12 +17,12 @@ class BuildUtils {
               --snapshot-mode=redo \
               --log-format=text \
               --verbosity=info
-        """)
+        """
     }
 
     // 构建 arm64 镜像的方法
     def buildArm64 = {script, Map params, Map envVars ->
-        script.sh (script: """
+        script.sh  """
             /kaniko/executor \
               --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
               --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
@@ -36,6 +36,6 @@ class BuildUtils {
               --snapshot-mode=redo \
               --log-format=text \
               --verbosity=info
-        """)
+        """
     }
 }
