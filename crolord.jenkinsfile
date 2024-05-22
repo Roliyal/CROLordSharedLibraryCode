@@ -82,57 +82,50 @@ pipeline {
             }
         }
 
-stage('Parallel Build') {
-    steps {
-        script {
-
-            
-            // 在script块中定义getImageForPlatform方法
-            def getImageForPlatform = { String platform ->
-                return (platform == 'linux/amd64') ? 'kanikoamd' : 'kanikoarm'
+        stage('Parallel Build') {
+            when {
+                expression {
+                    env.PLATFORMS == 'linux/amd64' || env.PLATFORMS == 'linux/arm64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
+                }
             }
+            parallel {
+                stage('Build for amd64') {
+                    when {
+                        expression {
+                            env.PLATFORMS == 'linux/amd64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
+                        }
+                    }
+                    agent { kubernetes { inheritFrom 'kanikoamd' } }
+                    steps {
+                        script {
+                            unstash 'source-code'
+                            container('kanikoamd') {
+                                // 调用 BuildUtils 的 buildAmd64 方法
+                                org.devops.BuildUtils.buildAmd64(this, params, env)
+                            }
+                        }
+                    }
+                }
 
-
-            def platforms = ['linux/amd64', 'linux/arm64'] // 从环境变量 PLATFORMS 获取目标平台
-            def buildTasks = [:] // 初始化用于并行构建的任务映射
-
-            platforms.each { platform ->
-                def containerName = (platform == 'linux/amd64') ? 'kanikoamd' : 'kanikoarm'
-                def labelName = "build-${platform}"
-
-                buildTasks["Build on ${platform}"] = {
-                    podTemplate(label: labelName, containers: [
-                        containerTemplate(name: containerName, image: getImageForPlatform(platform), command: 'cat', ttyEnabled: true)
-                    ]) {
-                        node(labelName) {
-                            container(containerName) {
-                                // 构建环境变量的映射
-                                def envVars = [
-                                    WORKSPACE: env.WORKSPACE,
-                                    BUILD_DIRECTORY: params.BUILD_DIRECTORY,
-                                    IMAGE_REGISTRY: env.IMAGE_REGISTRY,
-                                    IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
-                                    JOB_NAME: env.JOB_NAME,
-                                    VERSION_TAG: env.VERSION_TAG,
-                                    REPOSITORY_NAME: env.REPOSITORY_NAME
-                                ]
-                                // 调用共享库的 buildImage 方法
-                                org.devops.BuildUtils.buildImage(this, platform, envVars)
+                stage('Build for arm64') {
+                    when {
+                        expression {
+                            env.PLATFORMS == 'linux/arm64' || env.PLATFORMS == 'linux/amd64,linux/arm64'
+                        }
+                    }
+                    agent { kubernetes { inheritFrom 'kanikoarm' } }
+                    steps {
+                        script {
+                            unstash 'source-code'
+                            container('kanikoarm') {
+                                // 调用 BuildUtils 的 buildArm64 方法
+                                org.devops.BuildUtils.buildArm64(this, params, env)
                             }
                         }
                     }
                 }
             }
-            parallel buildTasks
         }
-    }
-}
-
-
-
-
-
-
 
  
       
