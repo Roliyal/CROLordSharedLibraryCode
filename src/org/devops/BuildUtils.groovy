@@ -3,13 +3,9 @@ package org.devops
 class BuildUtils {
     // 构建 amd64 镜像的方法
     def buildAmd64 = {script, Map params, Map envVars -> 
-        script.echo "Inside buildAmd64"
-        script.echo "Workspace: ${script.env.WORKSPACE}"
-        script.echo "Version Tag: ${script.env.VERSION_TAG}"
-        script.echo "Full Context Path: ${script.env.WORKSPACE}/${params['BUILD_DIRECTORY']}"
         script.sh  """
             kaniko \
-              --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
+              --context ${script.env.WORKSPACE}/${params.BUILD_DIRECTORY} \
               --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
               --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/${envVars.REPOSITORY_NAME}:${envVars.VERSION_TAG}-amd64 \
               --cache=true \
@@ -28,7 +24,7 @@ class BuildUtils {
     def buildArm64 = {script, Map params, Map envVars ->
         script.sh  """
             /kaniko/executor \
-              --context ${envVars.WORKSPACE}/${params.BUILD_DIRECTORY} \
+              --context ${script.env.WORKSPACE}/${params.BUILD_DIRECTORY} \
               --dockerfile ${params.BUILD_DIRECTORY}/Dockerfile \
               --destination ${envVars.IMAGE_REGISTRY}/${envVars.IMAGE_NAMESPACE}/${envVars.REPOSITORY_NAME}:${envVars.VERSION_TAG}-arm64 \
               --cache=true \
