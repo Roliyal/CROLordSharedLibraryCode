@@ -102,13 +102,15 @@ pipeline {
                             unstash 'source-code'
                             container('kanikoamd') {
                                 def utils = new org.devops.BuildUtils()
+                                // 获取当前脚本 (this指当前的流水线脚本实例)
+                                def currentScript = this
+                                // 创建环境变量的映射
                                 def clonedEnv = [:]
-                                def envVars = script.env.getEnv()
-                                envVars.each { key, value ->
+                                this.env.getEnvironment().each { key, value ->
                                     clonedEnv[key] = value
                                 }
-                                 // 调用 BuildUtils 的 buildAmd64 方法
-                                utils.buildAmd64(this, params, clonedenv)
+                                // 调用BuildUtils中的方法
+                                utils.buildAmd64(currentScript, params, clonedEnv)
                             }
                         }
                     }
@@ -126,13 +128,15 @@ pipeline {
                             unstash 'source-code'
                             container('kanikoarm') {
                                 def utils = new org.devops.BuildUtils()
+                                // 获取当前脚本 (this指当前的流水线脚本实例)
+                                def currentScript = this
+                                // 创建环境变量的映射
                                 def clonedEnv = [:]
-                                def envVars = script.env.getEnv()
-                                envVars.each { key, value ->
+                                this.env.getEnvironment().each { key, value ->
                                     clonedEnv[key] = value
                                 }
-                                // 调用 BuildUtils 的 buildArm64 方法
-                                utils.buildArm64(this, params, clonedenv)
+                                // 调用BuildUtils中的方法
+                                utils.buildArm64(currentScript, params, clonedEnv)
                             }
                         }
                     }
