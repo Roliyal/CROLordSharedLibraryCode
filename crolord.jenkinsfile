@@ -102,8 +102,12 @@ pipeline {
                             unstash 'source-code'
                             container('kanikoamd') {
                                 def utils = new org.devops.BuildUtils()
-                                def clonedEnv = env.collectEntries{ key, value -> [(key): value] }
-                                // 调用 BuildUtils 的 buildAmd64 方法
+                                def clonedEnv = [:]
+                                def envVars = script.env.getEnv()
+                                envVars.each { key, value ->
+                                    clonedEnv[key] = value
+                                }
+                                 // 调用 BuildUtils 的 buildAmd64 方法
                                 utils.buildAmd64(this, params, clonedenv)
                             }
                         }
@@ -122,7 +126,11 @@ pipeline {
                             unstash 'source-code'
                             container('kanikoarm') {
                                 def utils = new org.devops.BuildUtils()
-                                def clonedEnv = env.collectEntries{ key, value -> [(key): value] }
+                                def clonedEnv = [:]
+                                def envVars = script.env.getEnv()
+                                envVars.each { key, value ->
+                                    clonedEnv[key] = value
+                                }
                                 // 调用 BuildUtils 的 buildArm64 方法
                                 utils.buildArm64(this, params, clonedenv)
                             }
