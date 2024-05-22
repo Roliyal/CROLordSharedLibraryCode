@@ -91,6 +91,18 @@ pipeline {
                 script {
                     def platforms = env.PLATFORMS.tokenize(',')
                     def buildTasks = [:]
+
+                    def envVars = [
+                        PLATFORMS: env.PLATFORMS,
+                        WORKSPACE: env.WORKSPACE,
+                        BUILD_DIRECTORY: params.BUILD_DIRECTORY,
+                        IMAGE_REGISTRY: env.IMAGE_REGISTRY,
+                        IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
+                        JOB_NAME: env.JOB_NAME,
+                        VERSION_TAG: env.VERSION_TAG,
+                        REPOSITORY_NAME: env.REPOSITORY_NAME
+                        ]
+                
                     
                     platforms.each { platform ->
                         buildTasks["Build on ${platform}"] = {
