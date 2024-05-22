@@ -107,7 +107,7 @@ pipeline {
                                 // 创建环境变量的映射
                                 def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
-                                    clonedEnv[key] = value
+                                    envVars[key] = value
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildAmd64(currentScript, params, envVars)
@@ -133,7 +133,7 @@ pipeline {
                                 // 创建环境变量的映射
                                 def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
-                                    clonedEnv[key] = value
+                                    envVars[key] = value
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildArm64(currentScript, params, envVars)
