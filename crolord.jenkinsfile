@@ -99,6 +99,7 @@ pipeline {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
                         script {
+                            echo "WORKSPACE is: ${env.WORKSPACE}"
                             unstash 'source-code'
                             container('kanikoamd') {
                                 def utils = new org.devops.BuildUtils()
