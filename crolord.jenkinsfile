@@ -99,11 +99,6 @@ pipeline {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
                         script {
-                            echo "WORKSPACE is: ${env.WORKSPACE}"
-                            echo "IMAGE_REGISTRY is: ${env.IMAGE_REGISTRY}"
-                            echo "IMAGE_NAMESPACE is: ${env.IMAGE_NAMESPACE}"
-                            echo "REPOSITORY_NAME is: ${env.REPOSITORY_NAME}"
-                            echo "VERSION_TAG is: ${env.VERSION_TAG}"
                             unstash 'source-code'
                             container('kanikoamd') {
                                 def utils = new org.devops.BuildUtils()
