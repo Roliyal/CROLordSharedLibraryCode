@@ -83,6 +83,7 @@ pipeline {
             }
         }
 
+        //判断构建平台，并行构建
         stage('Parallel Build') {
             when {
                 expression {
@@ -90,6 +91,7 @@ pipeline {
                 }
             }
             parallel {
+                //构建Amd64架构
                 stage('Build for amd64') {
                     when {
                         expression {
@@ -115,7 +117,7 @@ pipeline {
                         }
                     }
                 }
-                //判断构建平台，并行构建
+                //构建Arm64架构
                 stage('Build for arm64') {
                     when {
                         expression {
