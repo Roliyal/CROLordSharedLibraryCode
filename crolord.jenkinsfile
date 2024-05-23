@@ -120,7 +120,7 @@ pipeline {
                         }
                     }
                 }
-
+                //判断构建平台，并行构建
                 stage('Build for arm64') {
                     when {
                         expression {
@@ -150,14 +150,7 @@ pipeline {
             }
         }
 
- 
-      
-            
-
-
-
-            
-            // 推送多架构镜像 Manifest-tools
+  // 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } }
                 steps {
@@ -177,7 +170,7 @@ pipeline {
                 }
             }
             // 部署到 Kubernetes 集群
-            /*stage('Deploy to Kubernetes') {
+            stage('Deploy to Kubernetes') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } } 
                 steps {
                     unstash 'source-code' // 恢复之前存储的代码
@@ -199,7 +192,7 @@ pipeline {
                         }
                     }
                 }
-        }*/
+        }
     
     }
 }
