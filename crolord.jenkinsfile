@@ -136,29 +136,24 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildAmd64(currentScript, params, envVars)
-
-                            }
-                        }
-                    }
-                stage('Push Multi-Arch Manifest') {
-                    agent { kubernetes { inheritFrom 'kanikoamd' } }
-                    steps {
-                        container('kanikoamd') {
-                            script {
-                                sh "manifest-tool --version "
-                                // 创建并推送多架构镜像的manifest
-                                sh """
-                                    manifest-tool --insecure push from-args \\
-                                    --platforms '${env.PLATFORMS}' \\
-                                    --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                    --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
-                                """
-                                sh "trivy image --platform linux/amd64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
+                            sh "manifest-tool --version "
+                             // 创建并推送多架构镜像的manifest
+                            container('kanikoamd') {
+                                script {
+                                    sh "manifest-tool --version "
+                                    // 创建并推送多架构镜像的manifest
+                                    sh """
+                                        manifest-tool --insecure push from-args \\
+                                        --platforms '${env.PLATFORMS}' \\
+                                        --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
+                                        --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
+                                    """
+                                    sh "trivy image --platform linux/arm64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
+                                }
                             }
                         }
                     }
                 }
-            }
                 //构建Arm64架构
                 stage('Build for arm64') {
                     when {
@@ -181,31 +176,24 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildArm64(currentScript, params, envVars)
-
-                            }
-                        }
-                    }
-                stage('Push Multi-Arch Manifest') {
-                    agent { kubernetes { inheritFrom 'kanikoamd' } }
-                    steps {
-                        container('kanikoamd') {
-                            script {
-                                sh "manifest-tool --version "
-                                // 创建并推送多架构镜像的manifest
-                                sh """
-                                    manifest-tool --insecure push from-args \\
-                                    --platforms '${env.PLATFORMS}' \\
-                                    --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                    --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
-                                """
-                                sh "trivy image --platform linux/arm64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
-                            }
+                            container('kanikoamd') {
+                                script {
+                                    sh "manifest-tool --version "
+                                    // 创建并推送多架构镜像的manifest
+                                    sh """
+                                        manifest-tool --insecure push from-args \\
+                                        --platforms '${env.PLATFORMS}' \\
+                                        --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
+                                        --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
+                                    """
+                                    sh "trivy image --platform linux/arm64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
+                                }
+                            }                            }
                         }
                     }
                 }
-             }
-         }
-     }
+            }
+        }
 
   /*/ 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
