@@ -37,7 +37,7 @@ pipeline {
         string(name: 'BUILD_DIRECTORY', defaultValue: 'Chapter2KubernetesApplicationBuild/Unit2CodeLibrary/FEBEseparation/go-guess-number', description: 'Build directory path, default path: Chapter2KubernetesApplicationBuild/Unit2CodeLibrary/FEBEseparation/go-guess-number')
         string(name: 'IMAGE_REGISTRY', defaultValue: 'lxf-registry-vpc.cn-hongkong.cr.aliyuncs.com', description: 'Image registry address, default: crolord-registry-registry-vpc.cn-hongkong.cr.aliyuncs.com')
         string(name: 'IMAGE_NAMESPACE', defaultValue: 'febe', description: 'Image namespace, default: febe')
-        string(name: 'REPOSITORY_NAME', defaultValue: 'crolord', description: 'Repository name,长度为 2 - 120 个字符，可使用小写英文字母、数字，可使用分隔符“_”、“-”、“.”、“/”（分隔符不能在首位或末位） default: crolord')
+        string(name: 'REPOSITORY_NAME', defaultValue: 'crolord', description: 'Repository name, default: crolord')
         string(name: 'SONARQUBE_DOMAINE', defaultValue: 'sonarqube.roliyal.com', description: 'SonarQube domain, default: sonarqube.roliyal.com')
     }
 
@@ -136,25 +136,10 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildAmd64(currentScript, params, envVars)
-                            sh "manifest-tool --version "
-                             // 创建并推送多架构镜像的manifest
                             }
-                        }
-                        script {
-                            sh "manifest-tool --version "
-                            // 创建并推送多架构镜像的manifest
-                            sh """
-                                manifest-tool --insecure push from-args \\
-                                --platforms '${env.PLATFORMS}' \\
-                                --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
-                            """
-                            sh "trivy image --platform linux/amd64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
                         }
                     }
                 }
-                
-            
                 //构建Arm64架构
                 stage('Build for arm64') {
                     when {
@@ -177,29 +162,15 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildArm64(currentScript, params, envVars)
+                            
                             }
                         }
-
-                         script {
-                            sh "manifest-tool --version "
-                            // 创建并推送多架构镜像的manifest
-                            sh """
-                                 manifest-tool --insecure push from-args \\
-                                --platforms '${env.PLATFORMS}' \\
-                                --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
-                            """
-                            sh "trivy image --platform linux/arm64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
-                                }
-                            }                            
-                        }
-                    
+                    }
                 }
             }
-        
-    
+        }
 
-  /*/ 推送多架构镜像 Manifest-tools
+  // 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } }
                 steps {
@@ -217,7 +188,7 @@ pipeline {
                         }
                     }
                 }
-            }*/
+            }
             // 部署到 Kubernetes 集群
             stage('Deploy to Kubernetes') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } } 
