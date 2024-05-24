@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-vue-front
+  labels:
+    app: app-vue-front
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-vue-front
+  template:
+    metadata:
+      labels:
+        app: app-vue-front
+    spec:
+      containers:
+        - name: app-vue-front
+          image: registry-vpc.cn-hongkong.aliyuncs.com/crolord_acr_personal/febe:frontv2
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: app-vue-front-nginx-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-vue-front-service
+spec:
+  selector:
+    app: app-vue-front
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-vue-front-nginx-config
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      server_name localhost;
+
+      location / {
+        root /usr/share/nginx/html;
+        index index.html;
+        try_files $uri $uri/ /index.html;
+      }
+      location /check-guess {
+        proxy_pass http://app-go-backend-service.cicd.svc.cluster.local:8081;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_read_timeout 300s;
+        proxy_connect_timeout 300s;
+      }
+    }

@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-go-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: app-go-backend
+  template:
+    metadata:
+      labels:
+        app: app-go-backend
+    spec:
+      containers:
+        - name: app-go-backend
+          image: registry-vpc.cn-hongkong.aliyuncs.com/crolord_acr_personal/febe:backendV2
+          ports:
+            - containerPort: 8081
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 250m
+              memory: 128Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-go-backend-service
+spec:
+  selector:
+    app: app-go-backend
+  ports:
+    - protocol: TCP
+      port: 8081
+      targetPort: 8081
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app-go-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app-vue-front-service
+                port:
+                  number: 8080
+
+
