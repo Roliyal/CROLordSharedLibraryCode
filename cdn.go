@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/cdn"
 	"os"
@@ -22,12 +23,8 @@ type Config struct {
 }
 
 func main() {
-	if len(os.Args) < 9 {
-		fmt.Println("Usage: go run cdn.go -i <AccessKey> -k <AccessKeySecret> -r <FilePath> -t <TaskType> [-o <ObjectType>] [-a <Area>]")
-		return
-	}
+	config := parseArgs()
 
-	config := parseArgs(os.Args)
 	client, err := cdn.NewClientWithAccessKey(config.RegionId, config.AccessKeyId, config.AccessKeySecret)
 	if err != nil {
 		fmt.Println("Error creating Alibaba Cloud client:", err)
@@ -55,31 +52,23 @@ func main() {
 	}
 }
 
-func parseArgs(args []string) *Config {
+func parseArgs() *Config {
 	config := &Config{}
-	for i := 1; i < len(args); i++ {
-		switch args[i] {
-		case "-i":
-			i++
-			config.AccessKeyId = args[i]
-		case "-k":
-			i++
-			config.AccessKeySecret = args[i]
-		case "-r":
-			i++
-			config.FilePath = args[i]
-		case "-t":
-			i++
-			config.TaskType = args[i]
-		case "-o":
-			i++
-			config.ObjectType = args[i]
-		case "-a":
-			i++
-			config.Area = args[i]
-		}
+	flag.StringVar(&config.AccessKeyId, "i", "", "AccessKeyId")
+	flag.StringVar(&config.AccessKeySecret, "k", "", "AccessKeySecret")
+	flag.StringVar(&config.FilePath, "r", "", "FilePath")
+	flag.StringVar(&config.TaskType, "t", "", "TaskType (clear or push)")
+	flag.StringVar(&config.ObjectType, "o", "File", "ObjectType (File or Directory)")
+	flag.StringVar(&config.Area, "a", "global", "Area (domestic or overseas)")
+	flag.StringVar(&config.RegionId, "region", "cn-hangzhou", "RegionId (default is cn-hangzhou)")
+	flag.Parse()
+
+	if config.AccessKeyId == "" || config.AccessKeySecret == "" || config.FilePath == "" || config.TaskType == "" {
+		fmt.Println("Missing required arguments")
+		flag.Usage()
+		os.Exit(1)
 	}
-	config.RegionId = "cn-hangzhou" // Set your desired region
+
 	return config
 }
 
