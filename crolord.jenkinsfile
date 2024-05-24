@@ -136,6 +136,10 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildAmd64(currentScript, params, envVars)
+
+                            }
+                        }
+                    }
                 stage('Push Multi-Arch Manifest') {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
@@ -154,10 +158,7 @@ pipeline {
                         }
                     }
                 }
-                            }
-                        }
-                    }
-                }
+            }
                 //构建Arm64架构
                 stage('Build for arm64') {
                     when {
@@ -180,6 +181,10 @@ pipeline {
                                 }
                                 // 调用BuildUtils中的方法
                                 utils.buildArm64(currentScript, params, envVars)
+
+                            }
+                        }
+                    }
                 stage('Push Multi-Arch Manifest') {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
@@ -198,12 +203,9 @@ pipeline {
                         }
                     }
                 }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+             }
+         }
+     }
 
   /*/ 推送多架构镜像 Manifest-tools
             stage('Push Multi-Arch Manifest') {
