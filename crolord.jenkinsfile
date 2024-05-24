@@ -82,6 +82,30 @@ pipeline {
                 stash includes: '**', name: 'source-code' // 存储工作空间，包括Dockerfile和应用代码
             }
         }
+        //SonarQube执行代码扫描
+        stage('SonarQube analysis') {
+            agent { kubernetes { inheritFrom 'kanikoamd' } }
+            steps {
+                // 从之前的阶段恢复存储的源代码
+                unstash 'source-code'
+
+                // 指定在特定容器中执行
+                container('kanikoamd') {
+                    // 设置SonarQube环境
+                    withSonarQubeEnv('sonar') {
+                        script {
+                            org.devops.SonarQubeScanner.scan(this, [
+                            JOB_NAME: env.JOB_NAME,
+                            IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
+                            VERSION_TAG: env.VERSION_TAG,
+                            SONARQUBE_DOMAIN: env.SONARQUBE_DOMAIN,
+                            BUILD_DIRECTORY: env.BUILD_DIRECTORY
+                            ])
+                        }
+                    }
+                }
+            }
+        }
 
         //判断构建平台，并行构建
         stage('Parallel Build') {
