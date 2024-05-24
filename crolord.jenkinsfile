@@ -12,7 +12,6 @@ pipeline {
         GIT_BRANCH = 'main' // Git主分支的默认值
         MAJOR_VERSION = 'v1' // 主版本号
         MINOR_VERSION = '0'  // 次版本号
-        //PLATFORMS = 'linux/amd64,linux/arm64' // 构建目标平台
         MAJOR = "${params.MAJOR_VERSION ?: env.MAJOR_VERSION ?: '1'}" // 主版本号，允许通过参数覆盖
         MINOR = "${params.MINOR_VERSION ?: env.MINOR_VERSION ?: '0'}" // 次版本号，允许通过参数覆盖
         PATCH = "${env.BUILD_NUMBER}" // 构建号，用作修订版本号
