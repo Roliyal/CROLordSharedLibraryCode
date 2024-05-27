@@ -141,6 +141,7 @@ pipeline {
                             }
                         }
                         script {
+                            container('kanikoamd') {
                             sh "manifest-tool --version "
                             // 创建并推送多架构镜像的manifest
                             sh """
@@ -150,6 +151,7 @@ pipeline {
                                 --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
                             """
                             sh "trivy image --platform linux/amd64  --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
+                           }
                         }
                     }
                 }
@@ -181,7 +183,7 @@ pipeline {
                         }
 
                          script {
-                            container('kanikoarm') {
+                            container('kanikoamd') {
                             sh "manifest-tool --version "
                             // 创建并推送多架构镜像的manifest
                             sh """
