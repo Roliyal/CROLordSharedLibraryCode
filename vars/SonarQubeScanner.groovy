@@ -1,5 +1,3 @@
-package org.devops
-
 import groovy.json.JsonSlurper
 
 class SonarQubeScanner {
