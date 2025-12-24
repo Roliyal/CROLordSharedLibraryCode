@@ -1,5 +1,144 @@
 ## Jenkins Pipeline 各个Stage分析与功能描述
 
+## Jenkins 共享库模块化架构
+
+本项目已将 Jenkinsfile 中的各个阶段模块化，所有模块都放在 `vars/` 目录下，采用 Jenkins 共享库的方式进行调用。
+
+### 📦 可用模块列表
+
+#### 1. **VersionManager.groovy** - 版本管理
+- **功能**: 负责生成和管理构建版本号
+- **方法**: `setVersion(script, major, minor)`
+- **使用示例**:
+  ```groovy
+  VersionManager.setVersion(this, env.MAJOR, env.MINOR)
+  ```
+
+#### 2. **GitCheckout.groovy** - Git代码检出
+- **功能**: 提供代码仓库克隆和检出功能
+- **方法**: 
+  - `checkout(script, params)` - 检出代码
+  - `stashCode(script, stashName)` - 存储源代码
+- **使用示例**:
+  ```groovy
+  GitCheckout.checkout(this, params)
+  GitCheckout.stashCode(this)
+  ```
+
+#### 3. **SonarQubeScanner.groovy** - 代码质量扫描
+- **功能**: 提供 SonarQube 代码扫描和质量门禁检查
+- **方法**: `scan(script, params)`
+- **使用示例**:
+  ```groovy
+  SonarQubeScanner.scan(this, [
+      JOB_NAME: env.JOB_NAME,
+      IMAGE_NAMESPACE: env.IMAGE_NAMESPACE,
+      VERSION_TAG: env.VERSION_TAG,
+      SONARQUBE_DOMAIN: env.SONARQUBE_DOMAIN,
+      BUILD_DIRECTORY: env.BUILD_DIRECTORY
+  ])
+  ```
+
+#### 4. **BuildUtils.groovy** - Docker镜像构建
+- **功能**: 提供多架构镜像构建能力(amd64/arm64)
+- **方法**: 
+  - `buildAmd64(script, params, envVars)` - 构建 amd64 架构镜像
+  - `buildArm64(script, params, envVars)` - 构建 arm64 架构镜像
+- **使用示例**:
+  ```groovy
+  def envVars = [:]
+  this.env.getEnvironment().each { key, value ->
+      envVars[key] = value
+  }
+  BuildUtils.buildAmd64(this, params, envVars)
+  BuildUtils.buildArm64(this, params, envVars)
+  ```
+
+#### 5. **ManifestPusher.groovy** - 多架构镜像Manifest推送
+- **功能**: 负责创建和推送多架构镜像的 manifest
+- **方法**: `pushManifest(script, envVars)`
+- **使用示例**:
+  ```groovy
+  ManifestPusher.pushManifest(this, envVars)
+  ```
+
+#### 6. **TrivyScanner.groovy** - 安全漏洞扫描
+- **功能**: 提供容器镜像和文件系统安全扫描
+- **方法**: 
+  - `scanImage(script, envVars)` - 扫描 Docker 镜像
+  - `scanFileSystem(script, buildDirectory)` - 扫描文件系统
+- **使用示例**:
+  ```groovy
+  TrivyScanner.scanImage(this, envVars)
+  TrivyScanner.scanFileSystem(this, env.BUILD_DIRECTORY)
+  ```
+
+#### 7. **KubernetesDeployer.groovy** - Kubernetes部署
+- **功能**: 提供应用到 Kubernetes 集群的部署功能
+- **方法**: 
+  - `deploy(script, params, envVars)` - 部署到 K8s
+  - `rollback(script, deploymentName, namespace)` - 回滚部署
+- **使用示例**:
+  ```groovy
+  KubernetesDeployer.deploy(this, params, envVars)
+  KubernetesDeployer.rollback(this, 'my-deployment', 'default')
+  ```
+
+#### 8. **OSSDeployer.groovy** - OSS部署
+- **功能**: 提供阿里云 OSS 存储桶管理和静态资源部署
+- **方法**: 
+  - `deploy(script, params, envVars)` - 部署到 OSS
+  - `revertToPreviousVersion(script, envVars)` - 回滚到上一个版本
+- **使用示例**:
+  ```groovy
+  OSSDeployer.deploy(this, params, envVars)
+  OSSDeployer.revertToPreviousVersion(this, envVars)
+  ```
+
+#### 9. **CDNRefresher.groovy** - CDN刷新
+- **功能**: 提供阿里云 CDN 缓存刷新和预热功能
+- **方法**: `refresh(script)`
+- **使用示例**:
+  ```groovy
+  CDNRefresher.refresh(this)
+  ```
+
+### 🎯 模块化优势
+
+1. **代码复用**: 各个模块可以在不同的 Jenkinsfile 中复用
+2. **易于维护**: 修改某个功能只需要更新对应的模块文件
+3. **统一标准**: 所有项目使用相同的构建、部署逻辑
+4. **职责清晰**: 每个模块只负责一个特定的功能
+5. **便于测试**: 可以单独测试每个模块的功能
+
+### 📝 使用说明
+
+1. 在 Jenkinsfile 开头引入共享库:
+   ```groovy
+   @Library('CROLordSharedLibraryCode') _
+   ```
+
+2. 在需要的地方直接调用模块:
+   ```groovy
+   stage('Version') {
+       steps {
+           script {
+               VersionManager.setVersion(this, env.MAJOR, env.MINOR)
+           }
+       }
+   }
+   ```
+
+3. 传递环境变量给模块:
+   ```groovy
+   def envVars = [:]
+   this.env.getEnvironment().each { key, value ->
+       envVars[key] = value
+   }
+   ```
+
+---
+
 
 ###  Pipeline 全局配置
 

@@ -48,9 +48,7 @@ pipeline {
             stage('Version') {
                 steps {
                     script {
-                        env.PATCH_VERSION = env.BUILD_NUMBER
-                        env.VERSION_NUMBER = "${env.MAJOR}.${env.MINOR}.${env.PATCH_VERSION}"
-                        echo "Current Version: ${env.VERSION_NUMBER}"
+                        VersionManager.setVersion(this, env.MAJOR, env.MINOR)
                     }
                 }
             }
@@ -58,27 +56,18 @@ pipeline {
         // 检出代码
         stage('Checkout') {
             steps {
-                cleanWs() // 清理工作空间
                 script {
-                    env.GIT_BRANCH = params.BRANCH
+                    GitCheckout.checkout(this, params)
                 }
-                // 检出Git仓库
-                checkout scm: [
-                    $class: 'GitSCM',
-                    branches: [[name: "*/${env.GIT_BRANCH}"]],
-                    userRemoteConfigs: [[url: params.GIT_REPOSITORY]],
-                    extensions: [[$class: 'CloneOption', depth: 1, noTags: false, reference: '', shallow: true]]
-                ]
-                echo '代码检出完成'
             }
         }
 
-        // 检查目录和Dockerfile
+        // 检查目录和存储代码
         stage('Check Directory') {
             steps {
-                echo "Current working directory: ${pwd()}"
-                sh 'ls -la'
-                stash includes: '**', name: 'source-code' // 存储工作空间，包括Dockerfile和应用代码
+                script {
+                    GitCheckout.stashCode(this)
+                }
             }
         }
         //SonarQube执行代码扫描
@@ -126,16 +115,13 @@ pipeline {
                         script {
                             unstash 'source-code'
                             container('kanikoamd') {
-                                def utils = new BuildUtils()
-                                // 获取当前脚本 (this指当前的流水线脚本实例)
-                                def currentScript = this
                                 // 创建环境变量的映射
                                 def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
                                     envVars[key] = value
                                 }
                                 // 调用BuildUtils中的方法
-                                utils.buildAmd64(currentScript, params, envVars)
+                                BuildUtils.buildAmd64(this, params, envVars)
                             }
                         }
                     }
@@ -152,17 +138,13 @@ pipeline {
                         script {
                             unstash 'source-code'
                             container('kanikoarm') {
-                                def utils = new BuildUtils()
-                                // 获取当前脚本 (this指当前的流水线脚本实例)
-                                def currentScript = this
                                 // 创建环境变量的映射
                                 def envVars = [:]
                                 this.env.getEnvironment().each { key, value ->
                                     envVars[key] = value
                                 }
                                 // 调用BuildUtils中的方法
-                                utils.buildArm64(currentScript, params, envVars)
-
+                                BuildUtils.buildArm64(this, params, envVars)
                             }
                         }
                     }
@@ -170,28 +152,21 @@ pipeline {
             }
         }
 
-            // 推送多架构镜像 Manifest-tools
+            // 推送多架构镜像 Manifest
             stage('Push Multi-Arch Manifest') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } }
                 steps {
                     container('kanikoamd') {
                         script {
-                            sh "manifest-tool --version "
-                            // 创建并推送多架构镜像的manifest
-                            sh """
-                                manifest-tool --insecure push from-args \\
-                                --platforms '${env.PLATFORMS}' \\
-                                --template '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}-ARCHVARIANT' \\
-                                --target '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'
-                            """
-                          if (env.PLATFORMS.contains('linux/amd64')) {
-                          // 执行 amd64 架构的安全扫描
-                              sh "trivy image --platform linux/amd64 --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
+                            // 创建环境变量的映射
+                            def envVars = [:]
+                            this.env.getEnvironment().each { key, value ->
+                                envVars[key] = value
                             }
-                          if (env.PLATFORMS.contains('linux/arm64')) {
-                          // 执行 arm64 架构的安全扫描
-                              sh "trivy image --platform linux/arm64 --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}'"
-                            }
+                            // 推送多架构镜像manifest
+                            ManifestPusher.pushManifest(this, envVars)
+                            // 执行安全扫描
+                            TrivyScanner.scanImage(this, envVars)
                         }
                     }
                 }
@@ -200,22 +175,15 @@ pipeline {
             stage('Deploy to Kubernetes') {
                 agent { kubernetes { inheritFrom 'kanikoamd' } }
                 steps {
-                    unstash 'source-code' // 恢复之前存储的代码
                     container('kanikoamd') {
                         script {
-                            withCredentials([file(credentialsId: 'crolorduat', variable: 'KUBECONFIG')]) {
-                                // 执行 kubectl 命令
-                                sh "kaniko version"
-                                sh "kubectl get node"
-                                env.FULL_IMAGE_URL = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.REPOSITORY_NAME}:${env.VERSION_TAG}"
-
-                                sh """
-                                cd ${env.WORKSPACE}/${params.BUILD_DIRECTORY}
-                                cp *.yaml updated-deployment.yaml
-                                sed -i 's|image:.*|image: ${env.FULL_IMAGE_URL}|' updated-deployment.yaml
-                                kubectl apply -f updated-deployment.yaml
-                                """
+                            // 创建环境变量的映射
+                            def envVars = [:]
+                            this.env.getEnvironment().each { key, value ->
+                                envVars[key] = value
                             }
+                            // 部署到Kubernetes
+                            KubernetesDeployer.deploy(this, params, envVars)
                         }
                     }
                 }

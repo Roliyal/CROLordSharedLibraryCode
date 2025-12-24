@@ -1,3 +1,7 @@
+#!groovy
+
+@Library('CROLordSharedLibraryCode')  _
+
 pipeline {
     // 定义使用的 Jenkins agent 类型
     agent { kubernetes { /* 配置省略 */ } }
@@ -54,20 +58,18 @@ pipeline {
             steps {
                 container('kanikoamd') {
                     script {
-                        // 使用 withCredentials 从 Jenkins 凭证存储中安全获取敏感信息
-                        withCredentials([string(credentialsId: 'access_key_id', variable: 'ACCESS_KEY_ID'),
-                                         string(credentialsId: 'access_key_secret', variable: 'ACCESS_KEY_SECRET')]) {
-                            def bucketName = "${env.OSSBUCKET}-${env.DEPLOY_ENVIRONMENT}"
-                            sh "ossutil config -e ${env.OSSENDPOINT} -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET}"
-                            // 恢复到上一个版本
-                            sh "ossutil revert-versioning oss://${bucketName} -r"
-                            echo "Reverted to previous version on bucket: ${bucketName}"
+                        // 创建环境变量的映射
+                        def envVars = [:]
+                        this.env.getEnvironment().each { key, value ->
+                            envVars[key] = value
                         }
+                        // 回滚到上一个版本
+                        OSSDeployer.revertToPreviousVersion(this, envVars)
                     }
                 }
             }
         }
-    stage('Refresh CDN') {
+    stage('Refresh CDN After Revert') {
         agent { kubernetes { inheritFrom 'kanikoamd' } }
             when {
             expression {
@@ -78,43 +80,11 @@ pipeline {
            // 指定在特定容器中执行
             container('kanikoamd') {
                 script {
-                    echo "Refreshing CDN..."
-                        // 使用 withCredentials 从 Jenkins 凭证存储中安全获取敏感信息
-                    withCredentials([string(credentialsId: 'access_key_id', variable: 'ACCESS_KEY_ID'),
-                                     string(credentialsId: 'access_key_secret', variable: 'ACCESS_KEY_SECRET')]) {
-                    // 下载 cdn.go 文件
-                    def cdnGo = httpRequest(
-                    url: 'https://raw.githubusercontent.com/Roliyal/CROLordSharedLlibraryCode/main/cdn.go',
-                    outputFile: 'cdn.go'
-                                    )
-                                    echo "cdn.go downloaded: ${cdnGo.status}"
-
-                                    // 下载 urls.txt 文件
-                                    def urlsTxt = httpRequest(
-                                        url: 'https://raw.githubusercontent.com/Roliyal/CROLordSharedLlibraryCode/main/urls.txt',
-                                        outputFile: 'urls.txt'
-                                    )
-                                    echo "urls.txt downloaded: ${urlsTxt.status}"
-                                    // 初始化 go module 并获取依赖
-                                    sh """
-                                    go mod init cdn-refresh
-                                    go get github.com/aliyun/alibaba-cloud-sdk-go/services/cdn
-                                    """
-                                    // 执行 go run cdn.go 命令
-                                    withEnv([
-                                        "ACCESS_KEY_ID=${ACCESS_KEY_ID}",
-                                        "ACCESS_KEY_SECRET=${ACCESS_KEY_SECRET}"
-                                    ]) {
-                                        sh '''
-                                        go run cdn.go -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET} -r urls.txt -t clear -o File
-                                        go run cdn.go -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET} -r urls.txt -t push -a domestic
-                                        '''
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CDNRefresher.refresh(this)
                 }
+            }
+        }
+    }
 
         stage('Main Pipeline') {
             when {
@@ -128,35 +98,24 @@ pipeline {
                 stage('Version') {
                     steps {
                         script {
-                            env.PATCH_VERSION = env.BUILD_NUMBER
-                            env.VERSION_NUMBER = "${env.MAJOR}.${env.MINOR}.${env.PATCH_VERSION}"
-                            echo "Current Version: ${env.VERSION_NUMBER}"
+                            VersionManager.setVersion(this, env.MAJOR, env.MINOR)
                         }
                     }
                 }
 
                 stage('Checkout') {
                     steps {
-                        cleanWs() // 清理工作空间
                         script {
-                            env.GIT_BRANCH = params.BRANCH
+                            GitCheckout.checkout(this, params)
                         }
-                        // 检出Git仓库
-                        checkout scm: [
-                            $class: 'GitSCM',
-                            branches: [[name: "*/${env.GIT_BRANCH}"]],
-                            userRemoteConfigs: [[url: params.GIT_REPOSITORY]],
-                            extensions: [[$class: 'CloneOption', depth: 1, noTags: false, reference: '', shallow: true]]
-                        ]
-                        echo '代码检出完成'
                     }
                 }
 
                 stage('Check Directory') {
                     steps {
-                        echo "Current working directory: ${pwd()}"
-                        sh 'ls -la'
-                        stash includes: '**', name: 'source-code' // 存储工作空间，包括Dockerfile和应用代码
+                        script {
+                            GitCheckout.stashCode(this)
+                        }
                     }
                 }
 
@@ -212,78 +171,18 @@ pipeline {
                 stage('node oss push') {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
-                        // 从之前的阶段恢复存储的源代码
                         unstash 'source-code'
-                        // 指定在特定容器中执行
                         container('kanikoamd') {
                             script {
-                                echo "Deploying to environment: ${env.DEPLOY_ENVIRONMENT}"
-                                // 使用 withCredentials 从 Jenkins 凭证存储中安全获取敏感信息
-                                withCredentials([string(credentialsId: 'access_key_id', variable: 'ACCESS_KEY_ID'),
-                                                 string(credentialsId: 'access_key_secret', variable: 'ACCESS_KEY_SECRET')]) {
-                                    def buildDir = env.BUILD_DIRECTORY
-                                    sh "bash -c 'cd ${buildDir} && npm cache clean --force && npm install --loglevel verbose && npm run build'"
-                                    echo "Starting Trivy scan..."
-                                    try {
-                                        // 创建 Trivy 扫描脚本
-                                        writeFile file: 'trivy_scan.sh', text: """#!/bin/bash
-                                        echo "Running Trivy scan on directory: ${BUILD_DIRECTORY}"
-                                        trivy fs \
-                                                --vuln-type library \
-                                                --severity HIGH,CRITICAL \
-                                                --format json \
-                                                --output trivy_report.json \
-                                                --ignore-unfixed \
-                                                --no-progress \
-                                                --cache-backend fs \
-                                                ${env.BUILD_DIRECTORY}
-                                        """
-                                        // 赋予脚本执行权限
-                                        sh 'chmod +x trivy_scan.sh'
-                                        // 执行 Trivy 扫描脚本
-                                        sh './trivy_scan.sh'
-                                        // 打印扫描结果
-                                        echo "Trivy Scan Results:"
-                                        sh 'cat trivy_report.json'
-                                        // 解析和检查扫描结果
-                                        def report = readJSON file: 'trivy_report.json'
-                                        // 检查是否有严重漏洞或配置错误
-                                        def hasCriticalVulns = report.Results.any { it.Vulnerabilities?.any { v -> v.Severity == 'CRITICAL' } }
-                                        def hasHighVulns = report.Results.any { it.Vulnerabilities?.any { v -> v.Severity == 'HIGH' } }
-                                        def hasMisconfigErrors = report.Results.any { it.Misconfigurations?.any { m -> m.Severity in ['HIGH', 'CRITICAL'] } }
-                                        def hasSecrets = report.Results.any { it.Secrets?.any() }
-                                        if (hasCriticalVulns || hasHighVulns || hasMisconfigErrors || hasSecrets) {
-                                            error "Trivy scan found vulnerabilities or issues. Check trivy_report.json for details."
-                                        } else {
-                                            echo "No HIGH or CRITICAL vulnerabilities, misconfigurations, or secrets found."
-                                        }
-                                    } catch (Exception e) {
-                                        echo "Trivy scan failed: ${e}"
-                                    }
-                            // 构建存储桶名称
-                            def bucketName = "${env.OSSBUCKET}-${env.DEPLOY_ENVIRONMENT}"
-                            // 配置 ossutil 和检查存储桶是否存在，以及初始化静态页面、版本控制特性等
-                            sh "ossutil config -e ${env.OSSENDPOINT} -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET}"
-                            def bucketExists = sh(script: "ossutil ls oss://${bucketName} --endpoint ${env.OSSENDPOINT}", returnStatus: true)
-                            if (bucketExists != 0) {
-                                def createBucketStatus = sh(script: "ossutil mb oss://${bucketName} --acl public-read --storage-class Standard --redundancy-type ZRS --endpoint ${env.OSSENDPOINT}", returnStatus: true)
-                                if (createBucketStatus != 0) {
-                                    error "Failed to create bucket ${bucketName}. It might already exist or you might not have the correct permissions."
-                                } else {
-                                    // 配置存储桶
-                                    def websiteConfig = httpRequest(
-                                        url: 'https://raw.githubusercontent.com/Roliyal/CROLordSharedLibraryCode/main/localhostnorouting.xml',
-                                        outputFile: "localhostnorouting.xml"
-                                    )
-                                    sh "ossutil website --method put oss://${bucketName} localhostnorouting.xml"
-                                    sh "ossutil bucket-versioning --method put oss://${bucketName} enabled"
+                                // 创建环境变量的映射
+                                def envVars = [:]
+                                this.env.getEnvironment().each { key, value ->
+                                    envVars[key] = value
                                 }
-                            }
-                                    // 上传 dist 目录到 OSS
-                                    sh "cd ${buildDir} && ossutil cp -rf dist oss://${bucketName}/ --endpoint ${env.OSSENDPOINT}"
-                                    echo "Deployment to OSS completed: ${bucketName}"
-                                    // sh "trivy image --exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed --no-progress --insecure --timeout 5m '${env.IMAGE_REGISTRY}/${env.IMAGE_NAMESPACE}/${env.JOB_NAME}:${env.VERSION_TAG}'"
-                                }
+                                // 执行文件系统扫描
+                                TrivyScanner.scanFileSystem(this, envVars.BUILD_DIRECTORY)
+                                // 部署到OSS
+                                OSSDeployer.deploy(this, params, envVars)
                             }
                         }
                     }
@@ -292,42 +191,9 @@ pipeline {
                 stage('Refresh CDN') {
                     agent { kubernetes { inheritFrom 'kanikoamd' } }
                     steps {
-                        // 指定在特定容器中执行
                         container('kanikoamd') {
                             script {
-                                echo "Refreshing CDN..."
-                                // 使用 withCredentials 从 Jenkins 凭证存储中安全获取敏感信息
-                                withCredentials([string(credentialsId: 'access_key_id', variable: 'ACCESS_KEY_ID'),
-                                                 string(credentialsId: 'access_key_secret', variable: 'ACCESS_KEY_SECRET')]) {
-                                    // 下载 cdn.go 文件
-                                    def cdnGo = httpRequest(
-                                        url: 'https://raw.githubusercontent.com/Roliyal/CROLordSharedLibraryCode/main/cdn.go',
-                                        outputFile: 'cdn.go'
-                                    )
-                                    echo "cdn.go downloaded: ${cdnGo.status}"
-
-                                    // 下载 urls.txt 文件
-                                    def urlsTxt = httpRequest(
-                                        url: 'https://raw.githubusercontent.com/Roliyal/CROLordSharedLibraryCode/main/urls.txt',
-                                        outputFile: 'urls.txt'
-                                    )
-                                    echo "urls.txt downloaded: ${urlsTxt.status}"
-                                    // 初始化 go module 并获取依赖
-                                    sh """
-                                    go mod init cdn-refresh
-                                    go get github.com/aliyun/alibaba-cloud-sdk-go/services/cdn
-                                    """
-                                    // 执行 go run cdn.go 命令
-                                    withEnv([
-                                        "ACCESS_KEY_ID=${ACCESS_KEY_ID}",
-                                        "ACCESS_KEY_SECRET=${ACCESS_KEY_SECRET}"
-                                    ]) {
-                                        sh '''
-                                        go run cdn.go -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET} -r urls.txt -t clear -o File
-                                        go run cdn.go -i ${ACCESS_KEY_ID} -k ${ACCESS_KEY_SECRET} -r urls.txt -t push -a domestic
-                                        '''
-                                    }
-                                }
+                                CDNRefresher.refresh(this)
                             }
                         }
                     }
