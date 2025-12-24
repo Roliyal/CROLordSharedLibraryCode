@@ -303,8 +303,7 @@ class MyNewModule {
 
 - [Jenkins Shared Libraries文档](https://www.jenkins.io/doc/book/pipeline/shared-libraries/)
 - [Jenkinsfile说明文档](../jenkins/jenkinsfile_describe.md)
-- [项目配置说明](../README.md)
 
 ## 📞 支持
 
-如有问题或建议,请联系DevOps团队或提交Issue。
+如有问题或建议,请联系鳄霸团队或加入钉钉群，一起来做大做强，再创辉煌。
